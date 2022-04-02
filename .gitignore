@@ -1,0 +1,6 @@
+vgcore.*
+*.o
+core
+Makefile.bak
+/test/
+/bin/
