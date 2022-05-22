@@ -129,6 +129,31 @@ path_target path_stat(const char * path)
     }
 }
 
+void toggle_comment (bool * comment, range_const_char * text)
+{
+    range_const_char text_less = { .begin = text->begin, .end = text->end - 1 };
+    const char * i;
+
+    if (range_count(*text) < 2 || (text->begin[0] == '/' && text->begin[1] == '/'))
+    {
+	return;
+    }
+    
+    for_range (i, text_less)
+    {
+	if (*comment == false && i[0] == '/' && i[1] == '*')
+	{
+	    *comment = true;
+	}
+
+	if (*comment == true && i[0] == '*' && i[1] == '/')
+	{
+	    *comment = false;
+	    text->begin = i + 2;
+	}
+    }
+}
+
 bool list_depends(dependency_list * output, const range_const_char * path, const range_const_char * origin)
 {
     window_unsigned_char contents = {0};
@@ -157,8 +182,17 @@ bool list_depends(dependency_list * output, const range_const_char * path, const
 	log_fatal ("Could not open source file " RANGE_FORMSPEC, RANGE_FORMSPEC_ARG(*path));
     }
 
+    bool is_comment = false;
+
     while ( (status = convert_getline(&line, &fd_source.source, &end_sequence)) == STATUS_UPDATE )
     {
+	toggle_comment (&is_comment, &line);
+
+	if (is_comment)
+	{
+	    continue;
+	}
+	
 	if (!range_string_tokenize(&token, ' ', &line))
 	{
 	    continue;
